@@ -82,7 +82,19 @@ def genera_payload():
 # ==========================================
 with st.sidebar:
     st.header("📂 Gestione Progetto")
-    st.info("Salva il tuo lavoro in locale se devi interrompere, per poi riprenderlo in seguito.")
+
+    # MODALE POPUP CONTESTUALE PER LA SIDEBAR
+    with st.popover("❓ Come funziona il salvataggio?"):
+        st.markdown("""
+        **⚠️ Nessun dato viene salvato online.**
+        Questa applicazione vive solo nella memoria temporanea del tuo browser.
+        Se ricarichi la pagina (F5) o chiudi la finestra, **perderai tutto**.
+
+        **Per non perdere il lavoro:**
+        1. Clicca su **Scarica Bozza Incompleta**.
+        2. Verrà scaricato un file `bozza_...json` sul tuo computer.
+        3. Quando vorrai riprendere il lavoro, trascina quel file nel riquadro sottostante e clicca **Carica Dati**.
+        """)
 
     bozza_json = json.dumps(genera_payload(), indent=4, ensure_ascii=False)
     nome_bozza = st.session_state.corso['titolo'].replace(' ', '_').lower() if st.session_state.corso.get('titolo') else "nuovo_corso"
@@ -121,15 +133,26 @@ with st.sidebar:
                 st.error(f"Errore nel caricamento: {e}")
 
 st.title("🛠️ DEH-ALMA Course Master Builder")
-st.markdown("Compila le sezioni per costruire l'architettura del corso. Passa il mouse sopra le icone ❓ per le istruzioni dettagliate.")
 
-tab1, tab2, tab3, tab4 = st.tabs(["📚 1. Info Generali", "🎥 2. Moduli e Lezioni", "📎 3. Materiali Extra", "📦 4. Validazione & Export"])
+# AGGIUNTA DELLA QUINTA TAB PER LA GUIDA
+tab1, tab2, tab3, tab4, tab5 = st.tabs([
+    "📚 1. Info Generali",
+    "🎥 2. Moduli e Lezioni",
+    "📎 3. Materiali Extra",
+    "📦 4. Validazione & Export",
+    "❓ 5. Guida e Supporto"
+])
 
 # ==========================================
 # TAB 1: INFO GENERALI
 # ==========================================
 with tab1:
-    st.subheader("Informazioni Master del Corso")
+    col_tit, col_help = st.columns([8, 2])
+    with col_tit:
+        st.subheader("Informazioni Master del Corso")
+    with col_help:
+        with st.popover("ℹ️ Aiuto Info Generali"):
+            st.info("Questi dati popoleranno la pagina di copertina e il Syllabus del corso su Moodle. Compila ogni campo testuale. I campi con l'asterisco (*) sono obbligatori per completare il pacchetto.")
 
     st.session_state.corso["titolo"] = st.text_input("Titolo del Corso *", st.session_state.corso.get("titolo", ""))
     st.session_state.corso["sottotitolo"] = st.text_input("Sottotitolo *", st.session_state.corso.get("sottotitolo", ""))
@@ -151,8 +174,13 @@ with tab1:
     st.session_state.corso["cv_autore"] = st.text_area("Curriculum Vitae / Bio Docente *", st.session_state.corso.get("cv_autore", ""))
 
     st.markdown("---")
-    st.markdown("### Destinatari del Corso *")
-    st.caption("🗑️ **Per eliminare una riga:** Spunta la casella alla sua sinistra e premi il tasto 'Canc' o 'Backspace' sulla tastiera.")
+
+    col_dest, col_dest_help = st.columns([8, 2])
+    with col_dest:
+        st.markdown("### Destinatari del Corso *")
+    with col_dest_help:
+        with st.popover("ℹ️ Aiuto Destinatari"):
+            st.markdown("Scrivi nella riga vuota sottostante (es. *Infermieri*). **Premi il tasto ➕ in basso** per aggiungere altre righe. **Per cancellare:** spunta la riga e premi Canc.")
 
     if not st.session_state.corso.get("destinatari"):
         st.session_state.corso["destinatari"] = [{"profilo": ""}]
@@ -194,7 +222,16 @@ with tab1:
 # TAB 2: MODULI E VIDEOLEZIONI
 # ==========================================
 with tab2:
-    st.subheader("Gestione Struttura: Moduli e Lezioni")
+    col_mod, col_mod_help = st.columns([8, 2])
+    with col_mod:
+        st.subheader("Gestione Struttura: Moduli e Lezioni")
+    with col_mod_help:
+        with st.popover("ℹ️ Aiuto Struttura"):
+            st.markdown("""
+            **Come funziona:**
+            1. Crea un **Modulo** (le "scatole" principali, es. 'Modulo 1 - Basi').
+            2. Aggiungi le **Videolezioni** assegnandole a un Modulo specifico tramite il menu a tendina.
+            """)
 
     if st.session_state.corso.get("argomenti_trattati"):
         if st.button("🔄 Trasforma Argomenti in Moduli"):
@@ -253,9 +290,9 @@ with tab2:
 
             col4, col5 = st.columns(2)
             full_title = col4.text_input("Titolo Lezione *")
-            nome_file_video = col5.text_input("Nome File Video *", help="Obbligatorio. Nome esatto del file master (es. video_export_v2.mp4).")
+            nome_file_video = col5.text_input("Nome File Video *")
 
-            argomenti_raw = st.text_area("Argomenti della lezione (uno per riga) *", help="Inserisci un argomento per riga. Verrà convertito in un elenco puntato.")
+            argomenti_raw = st.text_area("Argomenti della lezione (uno per riga) *")
 
             if st.form_submit_button("➕ Aggiungi Lezione"):
                 if not id_lezione or not full_title or not nome_file_video or not argomenti_raw:
@@ -293,7 +330,15 @@ with tab2:
 # TAB 3: MATERIALI EXTRA
 # ==========================================
 with tab3:
-    st.subheader("Materiali Aggiuntivi (Slide, PDF, Quiz)")
+    col_mat, col_mat_help = st.columns([8, 2])
+    with col_mat:
+        st.subheader("Materiali Aggiuntivi (Slide, PDF, Quiz)")
+    with col_mat_help:
+        with st.popover("ℹ️ Aiuto Materiali"):
+            st.markdown("""
+            **Caricamento Fittizio:**
+            Il bottone "Sfoglia" non carica realmente il file su internet, serve solo a catturare automaticamente il **nome esatto del file** dal tuo computer, evitando errori di battitura.
+            """)
 
     with st.form("form_materiali", clear_on_submit=True):
         nomi_moduli_mat = [m["titolo"] for m in sorted(st.session_state.moduli, key=lambda x: x.get("ordine", 999))] if st.session_state.moduli else ["Globale"]
@@ -358,7 +403,6 @@ with tab4:
         if moduli_senza_lezioni:
             errori_validazione.append(f"Questi moduli non hanno videolezioni: **{', '.join(moduli_senza_lezioni)}** (Tab 2)")
 
-    # Validazione Nome File Video Obbligatorio
     if len(st.session_state.lezioni) > 0:
         lezioni_senza_video = [lez["id"] for lez in st.session_state.lezioni if not lez.get("nome_file_video", "").strip()]
         if lezioni_senza_video:
@@ -386,3 +430,47 @@ with tab4:
             mime="application/json",
             use_container_width=True
         )
+
+# ==========================================
+# TAB 5: GUIDA E SUPPORTO (DOCUMENTATION LAYER)
+# ==========================================
+with tab5:
+    st.header("📖 Manuale d'Uso: DEH-ALMA Course Builder")
+
+    st.markdown("""
+    ### 🎯 1. Finalità dell'Applicazione
+    Questo strumento sostituisce la compilazione manuale di file di testo o Word. Permette a te (Autore) di concentrarti esclusivamente sui **contenuti didattici**, garantendo al contempo che i dati vengano consegnati al team tecnico in un formato strutturato e privo di errori.
+    L'Architect utilizzerà il file JSON che genererai qui per **automatizzare la creazione della piattaforma Moodle** e il processamento video.
+
+    ---
+
+    ### 💾 2. Come Funziona il Salvataggio e Ripristino (MOLTO IMPORTANTE)
+    **Attenzione: Questa applicazione non è collegata a un database online.** Tutti i dati che scrivi vivono unicamente nella memoria provvisoria del tuo browser. Se ricarichi la pagina, chiudi la scheda o spegni il PC, **i dati andranno persi**.
+
+    Per prevenire la perdita dei dati o lavorare in più sessioni:
+    1. Guarda la **Barra Laterale a sinistra** (Gestione Progetto).
+    2. Clicca sul pulsante **"💾 Scarica Bozza Incompleta"**. Questo salverà sul tuo computer un file di salvataggio (anche se il corso è incompleto e presenta errori).
+    3. Quando sei pronto a riprendere il lavoro, riapri questa pagina web.
+    4. Trascina il file `bozza_...json` scaricato in precedenza nell'area **"📥 Riprendi lavoro da file JSON"** nella barra laterale.
+    5. Clicca su **"Carica Dati"**. L'interfaccia si popolerà istantaneamente con il tuo lavoro precedente.
+
+    ---
+
+    ### ✏️ 3. Come Modificare o Eliminare i Dati Inseriti
+    Ogni volta che aggiungi un dato tramite i pulsanti "+ Aggiungi", questo appare in una tabella sottostante. **Queste tabelle sono interattive come un foglio Excel:**
+    * **Per Modificare:** Fai semplicemente *doppio clic* sulla cella che vuoi correggere e digita il nuovo testo. Premi Invio per confermare.
+    * **Per Eliminare:** Metti la spunta sulla casella (checkbox) posta all'estrema sinistra della riga che vuoi eliminare. Poi premi il tasto **Canc** (o Backspace) sulla tua tastiera.
+    * **Per Riordinare:** Molte tabelle possiedono la colonna **"Pos."** (Posizione). Fai doppio clic sul numero e modificalo per cambiare l'ordine di presentazione dei moduli, degli argomenti o delle lezioni.
+
+    ---
+
+    ### ✅ 4. Esportazione Finale (Tab 4)
+    Quando hai finito di inserire l'intero corso, vai alla **Tab 4 (Validazione & Export)**.
+    Il sistema farà un controllo di qualità (Gatekeeper) per assicurarsi che:
+    * Siano stati compilati tutti i campi testuali di base (Titolo, Docente, ecc.).
+    * Ci sia almeno un Argomento, un Destinatario e un Modulo.
+    * **Ogni modulo abbia almeno una videolezione al suo interno.**
+    * **Ogni videolezione abbia il nome del file video associato.**
+
+    Finché questi requisiti non sono soddisfatti, vedrai una lista di avvisi in rosso e il pulsante finale sarà bloccato. Una volta risolti, apparirà il bottone verde **"✅ SCARICA MASTER JSON DEL CORSO"**. Invia questo file al tuo Moodle Architect.
+    """)
