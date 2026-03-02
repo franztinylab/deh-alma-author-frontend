@@ -4,6 +4,15 @@ import re
 
 st.set_page_config(page_title="DEH-ALMA Course Builder", layout="wide")
 
+st.markdown("""
+    <style>
+    /* Forza la rimozione delle istruzioni di input in inglese dai form */
+    div[data-testid="InputInstructions"] {
+        display: none !important;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
 # --- SISTEMA DI AUTENTICAZIONE ---
 def check_password():
     if "password_correct" not in st.session_state:
@@ -42,6 +51,8 @@ if 'lezioni' not in st.session_state:
 
 if 'materiali' not in st.session_state:
     st.session_state.materiali = []
+if 'intro_video' not in st.session_state:
+    st.session_state.intro_video = {"nome_file_video": ""}
 
 def pulisci_testo_lista(testo_grezzo):
     return [re.sub(r'^[\•\-\*\◦\▪]\s*', '', linea).strip() for linea in str(testo_grezzo).split('\n') if linea.strip()]
@@ -70,8 +81,20 @@ def genera_payload():
             "argomenti": pulisci_testo_lista(lez.get("argomenti_raw", ""))
         })
 
+    lezione_intro = {
+        "ordine": 0,
+        "modulo": "0 - Introduzione",
+        "id": "0.1",
+        "titolo": "Introduzione al corso",
+        "nome_file_video": st.session_state.intro_video.get("nome_file_video", ""),
+        "argomenti": ["Introduzione e presentazione del corso"]
+    }
+
+    lezioni_export.insert(0, lezione_intro) # Inserisce la lezione 0.1 in cima a tutte
+
     return {
         "metadata_corso": corso_export,
+        "intro_video": st.session_state.intro_video, # Salvato per permettere il ricaricamento del JSON
         "struttura_moduli": moduli_export,
         "struttura_lezioni": lezioni_export,
         "risorse_extra": st.session_state.materiali
@@ -85,7 +108,7 @@ with st.sidebar:
 
     # MODALE POPUP CONTESTUALE PER LA SIDEBAR
     with st.popover("❓ Come funziona il salvataggio?"):
-        st.markdown("""
+        st.info("""
         **⚠️ Nessun dato viene salvato online.**
         Questa applicazione vive solo nella memoria temporanea del tuo browser.
         Se ricarichi la pagina (F5) o chiudi la finestra, **perderai tutto**.
@@ -126,6 +149,7 @@ with st.sidebar:
                 st.session_state.moduli = data.get("struttura_moduli", [])
                 st.session_state.lezioni = data.get("struttura_lezioni", [])
                 st.session_state.materiali = data.get("risorse_extra", [])
+                st.session_state.intro_video = data.get("intro_video", {"nome_file_video": ""})
 
                 st.success("Progetto caricato!")
                 st.rerun()
@@ -161,7 +185,19 @@ with tab1:
     st.session_state.corso["obiettivi"] = st.text_area("Obiettivi Formativi *", st.session_state.corso.get("obiettivi", ""))
 
     st.markdown("---")
-    st.markdown("### 👨‍🏫 Informazioni Docente / Autore")
+    col_doc, col_doc_help = st.columns([8, 2])
+    with col_doc:
+        st.markdown("### 👨‍🏫 Informazioni Docente / Autore")
+    with col_doc_help:
+        with st.popover("ℹ️ Aiuto Bio Docente"):
+            st.info("""
+            **Linee guida per il Curriculum:**
+            Le informazioni devono essere **brevi ed essenziali** per ottimizzare la visualizzazione su Moodle.
+            Inserisci esclusivamente:
+            * **Titoli accademici** rilevanti.
+            * **Certificazioni** principali.
+            * **Competenze specifiche** legate agli argomenti di questo corso.
+            """)
 
     col_t, col_n, col_c = st.columns([1, 2, 2])
     opzioni_titolo = ["", "Prof.", "Prof.ssa", "Dott.", "Dott.ssa"]
@@ -171,25 +207,40 @@ with tab1:
     st.session_state.corso["docente_titolo"] = col_t.selectbox("Titolo (Opzionale)", opzioni_titolo, index=idx_titolo)
     st.session_state.corso["docente_nome"] = col_n.text_input("Nome *", st.session_state.corso.get("docente_nome", ""))
     st.session_state.corso["docente_cognome"] = col_c.text_input("Cognome *", st.session_state.corso.get("docente_cognome", ""))
+
     st.session_state.corso["cv_autore"] = st.text_area("Curriculum Vitae / Bio Docente *", st.session_state.corso.get("cv_autore", ""))
 
     st.markdown("---")
 
     col_dest, col_dest_help = st.columns([8, 2])
     with col_dest:
-        st.markdown("### Destinatari del Corso *")
+        st.markdown("### 👥 Destinatari del Corso *")
     with col_dest_help:
         with st.popover("ℹ️ Aiuto Destinatari"):
-            st.markdown("Scrivi nella riga vuota sottostante (es. *Infermieri*). **Premi il tasto ➕ in basso** per aggiungere altre righe. **Per cancellare:** spunta la riga e premi Canc.")
+            st.info("Compila il campo sottostante e clicca su **➕ Aggiungi Destinatario** per ogni profilo a cui è rivolto il corso (es. Infermieri, Medici, Personale Amministrativo).")
 
-    if not st.session_state.corso.get("destinatari"):
-        st.session_state.corso["destinatari"] = [{"profilo": ""}]
+    if "destinatari" not in st.session_state.corso or not st.session_state.corso["destinatari"]:
+        st.session_state.corso["destinatari"] = []
 
-    st.session_state.corso["destinatari"] = st.data_editor(
-        st.session_state.corso["destinatari"],
-        use_container_width=True, num_rows="dynamic", key="edit_destinatari",
-        column_config={"profilo": st.column_config.TextColumn("Profilo Destinatario", required=True)}
-    )
+    with st.form("form_destinatari", clear_on_submit=True):
+        nuovo_profilo = st.text_input("Inserisci Profilo Destinatario (es. Infermieri)")
+        if st.form_submit_button("➕ Aggiungi Destinatario"):
+            if not nuovo_profilo.strip():
+                st.error("Il campo profilo non può essere vuoto.")
+            else:
+                st.session_state.corso["destinatari"] = [d for d in st.session_state.corso["destinatari"] if d.get("profilo", "").strip() != ""]
+                st.session_state.corso["destinatari"].append({"profilo": nuovo_profilo.strip()})
+                st.success("Destinatario aggiunto!")
+                st.rerun()
+
+    destinatari_validi = [d for d in st.session_state.corso.get("destinatari", []) if d.get("profilo", "").strip() != ""]
+    if destinatari_validi:
+        st.caption("🗑️ **Per eliminare una riga:** Spunta la casella alla sua sinistra e premi il tasto 'Canc' o 'Backspace' sulla tastiera.")
+        st.session_state.corso["destinatari"] = st.data_editor(
+            st.session_state.corso["destinatari"],
+            use_container_width=True, num_rows="dynamic", key="edit_destinatari",
+            column_config={"profilo": st.column_config.TextColumn("Profilo Destinatario", required=True)}
+        )
 
     st.markdown("---")
     st.markdown("### Argomenti Trattati * (Minimo 1 obbligatorio)")
@@ -227,24 +278,49 @@ with tab2:
         st.subheader("Gestione Struttura: Moduli e Lezioni")
     with col_mod_help:
         with st.popover("ℹ️ Aiuto Struttura"):
-            st.markdown("""
+            st.info("""
             **Come funziona:**
             1. Crea un **Modulo** (le "scatole" principali, es. 'Modulo 1 - Basi').
             2. Aggiungi le **Videolezioni** assegnandole a un Modulo specifico tramite il menu a tendina.
             """)
 
     if st.session_state.corso.get("argomenti_trattati"):
-        if st.button("🔄 Trasforma Argomenti in Moduli"):
+        st.markdown("#### ⚡ Automazione Struttura")
+        col_btn, col_btn_help = st.columns([8, 2])
+
+        with col_btn:
+            esegui_trasformazione = st.button("🔄 Trasforma Argomenti in Moduli", use_container_width=True)
+
+        with col_btn_help:
+            with st.popover("ℹ️ Cos'è questo?"):
+                st.info("""
+                **Automazione Workflow:**
+                Cliccando questo pulsante, il sistema leggerà gli **Argomenti Trattati** inseriti nella *Tab 1* e genererà automaticamente i **Moduli** corrispondenti in questa scheda.
+
+                *Note tecniche:*
+                - Utile per creare rapidamente l'impalcatura del corso.
+                - Il sistema controlla i duplicati: se hai già creato un modulo con lo stesso nome, non verrà sovrascritto o sdoppiato.
+                """)
+
+        if esegui_trasformazione:
             moduli_esistenti = [m["titolo"] for m in st.session_state.moduli]
             aggiunti = 0
+
             for arg in st.session_state.corso["argomenti_trattati"]:
                 if arg["titolo"] not in moduli_esistenti:
                     nuovo_ordine = len(st.session_state.moduli) + 1
-                    st.session_state.moduli.append({"ordine": nuovo_ordine, "titolo": arg["titolo"], "descrizione": arg["descrizione"]})
+                    st.session_state.moduli.append({
+                        "ordine": nuovo_ordine,
+                        "titolo": arg["titolo"],
+                        "descrizione": arg.get("descrizione", "")
+                    })
                     aggiunti += 1
+
             if aggiunti > 0:
-                st.success(f"{aggiunti} moduli creati!")
+                st.success(f"✅ Pipeline eseguita: {aggiunti} moduli generati dagli argomenti!")
                 st.rerun()
+            else:
+                st.info("Sincronizzazione completata: Tutti gli argomenti sono già presenti come moduli.")
 
     st.markdown("---")
     st.markdown("### 📦 1. Moduli del Corso")
@@ -253,7 +329,7 @@ with tab2:
         col1, col2 = st.columns(2)
         nome_modulo = col1.text_input("Nome Modulo *")
         desc_modulo = col2.text_area("Breve introduzione (Opzionale)")
-        if st.form_submit_button("Aggiungi Modulo"):
+        if st.form_submit_button("➕ Aggiungi Modulo"):
             if not nome_modulo:
                 st.error("Il nome del modulo è obbligatorio.")
             else:
@@ -274,7 +350,14 @@ with tab2:
         )
 
     st.markdown("---")
-    st.markdown("### 🎥 2. Videolezioni")
+    st.markdown("### 🎬 2.0 Videolezione Introduttiva (Obbligatoria)")
+    st.info("Questa lezione ha ID **0.1** e titolo '**Introduzione al corso**' preimpostati dal sistema. Inserisci solo il nome del file video.")
+
+    st.session_state.intro_video["nome_file_video"] = st.text_input("Nome File Video (Intro) *", st.session_state.intro_video.get("nome_file_video", ""))
+
+
+    st.markdown("---")
+    st.markdown("### 🎥 2.1 Videolezioni Modulari")
 
     if not st.session_state.moduli:
         st.warning("⚠️ Crea almeno un Modulo per aggiungere delle videolezioni.")
@@ -283,46 +366,56 @@ with tab2:
         nomi_moduli = [m["titolo"] for m in moduli_ordinati]
 
         with st.form("form_lezione", clear_on_submit=True):
-            col1, col2, col3 = st.columns(3)
-            modulo_selezionato = col1.selectbox("Assegna al Modulo *", nomi_moduli)
-            id_lezione = col2.text_input("ID Lezione * (es. 1.1)")
-            youtube_id = col3.text_input("ID Video YouTube (Opzionale)")
+            modulo_selezionato = st.selectbox("Assegna al Modulo *", nomi_moduli)
 
-            col4, col5 = st.columns(2)
-            full_title = col4.text_input("Titolo Lezione *")
-            nome_file_video = col5.text_input("Nome File Video *")
+            col1, col2 = st.columns(2)
+            full_title = col1.text_input("Titolo Lezione *")
+            nome_file_video = col2.text_input("Nome File Video *")
 
             argomenti_raw = st.text_area("Argomenti della lezione (uno per riga) *")
 
             if st.form_submit_button("➕ Aggiungi Lezione"):
-                if not id_lezione or not full_title or not nome_file_video or not argomenti_raw:
-                    st.error("ID, Titolo, Nome File Video e Argomenti sono campi obbligatori.")
+                if not full_title or not nome_file_video or not argomenti_raw:
+                    st.error("Titolo, Nome File Video e Argomenti sono campi obbligatori.")
                 else:
                     nuovo_ordine = len(st.session_state.lezioni) + 1
                     st.session_state.lezioni.append({
                         "ordine": nuovo_ordine,
                         "modulo": modulo_selezionato,
-                        "id": id_lezione.strip(),
+                        "id": "",
                         "titolo": full_title.strip(),
-                        "youtube_id": youtube_id.strip(),
                         "nome_file_video": nome_file_video.strip(),
                         "argomenti_raw": argomenti_raw.strip()
                     })
                     st.success("Lezione aggiunta!")
+                    st.rerun()
 
         if st.session_state.lezioni:
-            st.caption("🗑️ **Per eliminare una lezione:** Spunta la casella a sinistra e premi 'Canc'. **Per eliminare un singolo argomento:** fai doppio clic sulla cella 'Argomenti' e cancella la riga di testo corrispondente.")
+            moduli_ordini = {m["titolo"]: m["ordine"] for m in moduli_ordinati}
+            contatori_lezioni = {m["titolo"]: 1 for m in moduli_ordinati}
+
+            lezioni_ordinate = sorted(st.session_state.lezioni, key=lambda x: (moduli_ordini.get(x["modulo"], 999), x.get("ordine", 999)))
+
+            for lez in lezioni_ordinate:
+                nome_mod = lez["modulo"]
+                ordine_mod = moduli_ordini.get(nome_mod, 999)
+                prog_lez = contatori_lezioni.get(nome_mod, 1)
+                lez["id"] = f"{ordine_mod}.{prog_lez}"
+                contatori_lezioni[nome_mod] = prog_lez + 1
+
+            st.session_state.lezioni = lezioni_ordinate
+
+            st.caption("🗑️ **Per eliminare una lezione:** Spunta la casella a sinistra e premi 'Canc'. L'ID si riaggiornerà automaticamente.")
             st.session_state.lezioni = st.data_editor(
                 st.session_state.lezioni,
                 use_container_width=True, num_rows="dynamic", key="edit_lezioni",
                 column_config={
-                    "ordine": st.column_config.NumberColumn("Pos.", min_value=1, required=True, width="small"),
+                    "id": st.column_config.TextColumn("ID (Auto)", disabled=True, width="small"),
                     "modulo": st.column_config.SelectboxColumn("Modulo", options=nomi_moduli, required=True),
-                    "id": st.column_config.TextColumn("ID", required=True),
                     "titolo": st.column_config.TextColumn("Titolo", required=True),
-                    "youtube_id": st.column_config.TextColumn("ID YouTube"),
                     "nome_file_video": st.column_config.TextColumn("Nome File Video", required=True),
-                    "argomenti_raw": st.column_config.TextColumn("Argomenti (Separati da a capo)", required=True)
+                    "argomenti_raw": st.column_config.TextColumn("Argomenti", required=True),
+                    "ordine": None
                 }
             )
 
@@ -335,7 +428,7 @@ with tab3:
         st.subheader("Materiali Aggiuntivi (Slide, PDF, Quiz)")
     with col_mat_help:
         with st.popover("ℹ️ Aiuto Materiali"):
-            st.markdown("""
+            st.info("""
             **Caricamento Fittizio:**
             Il bottone "Sfoglia" non carica realmente il file su internet, serve solo a catturare automaticamente il **nome esatto del file** dal tuo computer, evitando errori di battitura.
             """)
@@ -344,11 +437,11 @@ with tab3:
         nomi_moduli_mat = [m["titolo"] for m in sorted(st.session_state.moduli, key=lambda x: x.get("ordine", 999))] if st.session_state.moduli else ["Globale"]
         col1, col2 = st.columns(2)
         mod_mat_selezionato = col1.selectbox("Assegna al Modulo (Opzionale)", nomi_moduli_mat)
-        tipo_materiale = col2.selectbox("Tipologia", ["Slide", "Dispensa PDF", "Quiz XML", "Task H5P", "Altro"])
+        tipo_materiale = col2.selectbox("Tipologia", ["Slide", "Dispensa PDF", "Quiz", "Trascrizione", "Altro"])
         file_selezionato = st.file_uploader("Seleziona file di riferimento")
         desc_materiale = st.text_area("Descrizione o istruzioni")
 
-        if st.form_submit_button("📎 Aggiungi Materiale"):
+        if st.form_submit_button("➕ Aggiungi Materiale"):
             nome_file = file_selezionato.name if file_selezionato else "Nessun_file"
             st.session_state.materiali.append({
                 "modulo_riferimento": mod_mat_selezionato, "nome_file": nome_file,
@@ -364,7 +457,7 @@ with tab3:
             column_config={
                 "modulo_riferimento": st.column_config.SelectboxColumn("Modulo", options=nomi_moduli_mat, required=True),
                 "nome_file": st.column_config.TextColumn("Nome File"),
-                "tipo": st.column_config.SelectboxColumn("Tipologia", options=["Slide", "Dispensa PDF", "Quiz XML", "Task H5P", "Altro"]),
+                "tipo": st.column_config.SelectboxColumn("Tipologia", options=["Slide", "Dispensa PDF", "Quiz", "Trascrizione", "Altro"]),
                 "descrizione": st.column_config.TextColumn("Descrizione")
             }
         )
@@ -397,6 +490,9 @@ with tab4:
 
     if len(st.session_state.moduli) == 0:
         errori_validazione.append("Devi creare almeno **1 Modulo** (Tab 2)")
+
+    if not st.session_state.intro_video.get("nome_file_video", "").strip():
+        errori_validazione.append("Manca il **Nome File Video** per la Lezione Introduttiva 0.1 (Tab 2)")
 
     if len(st.session_state.moduli) > 0:
         moduli_senza_lezioni = [mod["titolo"] for mod in st.session_state.moduli if not any(lez["modulo"] == mod["titolo"] for lez in st.session_state.lezioni)]
@@ -456,7 +552,15 @@ with tab5:
 
     ---
 
-    ### ✏️ 3. Come Modificare o Eliminare i Dati Inseriti
+    ### ⚡ 3. Automazione Struttura: Dagli Argomenti ai Moduli
+    Per massimizzare l'efficienza e garantire la coerenza didattica, la piattaforma include una funzione di sincronizzazione automatica.
+    * Nella **Tab 2 (Moduli e Lezioni)** troverai il pulsante **"🔄 Trasforma Argomenti in Moduli"**.
+    * Cliccandolo, il sistema leggerà tutti gli *Argomenti Trattati* che hai inserito nella Tab 1 e creerà automaticamente le "scatole" dei moduli corrispondenti.
+    * **Prevenzione Errori:** Il sistema è intelligente. Se hai già creato alcuni moduli manualmente, aggiungerà solo gli argomenti mancanti, senza creare duplicati o cancellare il tuo lavoro.
+
+    ---
+
+    ### ✏️ 4. Come Modificare o Eliminare i Dati Inseriti
     Ogni volta che aggiungi un dato tramite i pulsanti "+ Aggiungi", questo appare in una tabella sottostante. **Queste tabelle sono interattive come un foglio Excel:**
     * **Per Modificare:** Fai semplicemente *doppio clic* sulla cella che vuoi correggere e digita il nuovo testo. Premi Invio per confermare.
     * **Per Eliminare:** Metti la spunta sulla casella (checkbox) posta all'estrema sinistra della riga che vuoi eliminare. Poi premi il tasto **Canc** (o Backspace) sulla tua tastiera.
@@ -464,7 +568,7 @@ with tab5:
 
     ---
 
-    ### ✅ 4. Esportazione Finale (Tab 4)
+    ### ✅ 5. Esportazione Finale (Tab 4)
     Quando hai finito di inserire l'intero corso, vai alla **Tab 4 (Validazione & Export)**.
     Il sistema farà un controllo di qualità (Gatekeeper) per assicurarsi che:
     * Siano stati compilati tutti i campi testuali di base (Titolo, Docente, ecc.).
@@ -472,5 +576,5 @@ with tab5:
     * **Ogni modulo abbia almeno una videolezione al suo interno.**
     * **Ogni videolezione abbia il nome del file video associato.**
 
-    Finché questi requisiti non sono soddisfatti, vedrai una lista di avvisi in rosso e il pulsante finale sarà bloccato. Una volta risolti, apparirà il bottone verde **"✅ SCARICA MASTER JSON DEL CORSO"**. Invia questo file al tuo Moodle Architect.
+    Finché questi requisiti non sono soddisfatti, vedrai una lista di avvisi in rosso e il pulsante finale sarà bloccato. Una volta risolti, apparirà il bottone verde **"✅ SCARICA MASTER JSON DEL CORSO"**. Invia questo file al tuo Moodle Architect per avviare il deployment automatico.
     """)
