@@ -156,7 +156,7 @@ with st.sidebar:
             except Exception as e:
                 st.error(f"Errore nel caricamento: {e}")
 
-st.title("🛠️ DEH-ALMA Course Master Builder")
+st.title("🛠️ DEH-ALMA Dati del corso")
 
 # AGGIUNTA DELLA QUINTA TAB PER LA GUIDA
 tab1, tab2, tab3, tab4, tab5 = st.tabs([
@@ -173,16 +173,20 @@ tab1, tab2, tab3, tab4, tab5 = st.tabs([
 with tab1:
     col_tit, col_help = st.columns([8, 2])
     with col_tit:
-        st.subheader("Informazioni Master del Corso")
+        st.subheader("Informazioni base del corso")
     with col_help:
         with st.popover("ℹ️ Aiuto Info Generali"):
-            st.info("Questi dati popoleranno la pagina di copertina e il Syllabus del corso su Moodle. Compila ogni campo testuale. I campi con l'asterisco (*) sono obbligatori per completare il pacchetto.")
+            st.info("""
+                    Questi dati popoleranno la **pagina di presentazione del corso**. Compila ogni campo testuale. I campi con l'asterisco (*) sono obbligatori per completare il pacchetto.
+                    La descrizione breve apparirà in un riquadro nella pagina di copertina, mentre la descrizione completa sarà visibile nel Syllabus.
+                    Gli obiettivi formativi saranno utilizzati per delineare le competenze che gli studenti acquisiranno.
+                    """)
 
     st.session_state.corso["titolo"] = st.text_input("Titolo del Corso *", st.session_state.corso.get("titolo", ""))
     st.session_state.corso["sottotitolo"] = st.text_input("Sottotitolo *", st.session_state.corso.get("sottotitolo", ""))
     st.session_state.corso["descrizione_breve"] = st.text_area("Descrizione Breve * (1-2 frasi)", st.session_state.corso.get("descrizione_breve", ""))
-    st.session_state.corso["descrizione_completa"] = st.text_area("Descrizione Completa *", st.session_state.corso.get("descrizione_completa", ""))
-    st.session_state.corso["obiettivi"] = st.text_area("Obiettivi Formativi *", st.session_state.corso.get("obiettivi", ""))
+    st.session_state.corso["descrizione_completa"] = st.text_area("Descrizione Completa * (1-2 paragrafi)", st.session_state.corso.get("descrizione_completa", ""))
+    st.session_state.corso["obiettivi"] = st.text_area("Obiettivi Formativi * (3-4 punti elenco)", st.session_state.corso.get("obiettivi", ""))
 
     st.markdown("---")
     col_doc, col_doc_help = st.columns([8, 2])
@@ -217,13 +221,13 @@ with tab1:
         st.markdown("### 👥 Destinatari del Corso *")
     with col_dest_help:
         with st.popover("ℹ️ Aiuto Destinatari"):
-            st.info("Compila il campo sottostante e clicca su **➕ Aggiungi Destinatario** per ogni profilo a cui è rivolto il corso (es. Infermieri, Medici, Personale Amministrativo).")
+            st.info("Compila il campo sottostante e clicca su **➕ Aggiungi Destinatario** per ogni profilo a cui è rivolto il corso (es. Studenti di... , Liberi Professionisti, Personale Amministrativo).")
 
     if "destinatari" not in st.session_state.corso or not st.session_state.corso["destinatari"]:
         st.session_state.corso["destinatari"] = []
 
     with st.form("form_destinatari", clear_on_submit=True):
-        nuovo_profilo = st.text_input("Inserisci Profilo Destinatario (es. Infermieri)")
+        nuovo_profilo = st.text_input("Inserisci Profilo Destinatario (es. Studenti di Informatica, Personale Amministrativo, ecc.)")
         if st.form_submit_button("➕ Aggiungi Destinatario"):
             if not nuovo_profilo.strip():
                 st.error("Il campo profilo non può essere vuoto.")
