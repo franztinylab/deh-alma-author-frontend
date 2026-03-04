@@ -75,7 +75,6 @@ def genera_payload():
             "modulo": lez.get("modulo", ""),
             "id": lez.get("id", ""),
             "titolo": lez.get("titolo", ""),
-            "youtube_id": lez.get("youtube_id", ""),
             "nome_file_video": lez.get("nome_file_video", ""),
             "argomenti_raw": lez.get("argomenti_raw", ""),
             "argomenti": pulisci_testo_lista(lez.get("argomenti_raw", ""))
@@ -83,7 +82,7 @@ def genera_payload():
 
     lezione_intro = {
         "ordine": 0,
-        "modulo": "0 - Introduzione",
+        "modulo": "Presentazione del corso",
         "id": "0.1",
         "titolo": "Introduzione al corso",
         "nome_file_video": st.session_state.intro_video.get("nome_file_video", ""),
@@ -147,7 +146,8 @@ with st.sidebar:
 
                 st.session_state.corso.update(loaded_corso)
                 st.session_state.moduli = data.get("struttura_moduli", [])
-                st.session_state.lezioni = data.get("struttura_lezioni", [])
+                lezioni_caricate = data.get("struttura_lezioni", [])
+                st.session_state.lezioni = [lez for lez in lezioni_caricate if lez.get("id") != "0.1" and lez.get("titolo") != "Introduzione al corso"]
                 st.session_state.materiali = data.get("risorse_extra", [])
                 st.session_state.intro_video = data.get("intro_video", {"nome_file_video": ""})
 
@@ -418,8 +418,9 @@ with tab2:
                     "modulo": st.column_config.SelectboxColumn("Modulo", options=nomi_moduli, required=True),
                     "titolo": st.column_config.TextColumn("Titolo", required=True),
                     "nome_file_video": st.column_config.TextColumn("Nome File Video", required=True),
-                    "argomenti_raw": st.column_config.TextColumn("Argomenti", required=True),
-                    "ordine": None
+                    "argomenti_raw": st.column_config.TextColumn("Argomenti testuali", required=True),
+                    "ordine": None,
+                    "argomenti": None,
                 }
             )
 
@@ -433,25 +434,32 @@ with tab3:
     with col_mat_help:
         with st.popover("ℹ️ Aiuto Materiali"):
             st.info("""
-            **Caricamento Fittizio:**
-            Il bottone "Sfoglia" non carica realmente il file su internet, serve solo a catturare automaticamente il **nome esatto del file** dal tuo computer, evitando errori di battitura.
+            **Inserimento Nome File:**
+            Digita il nome esatto del file comprensivo di estensione (es. `slide_modulo1.pdf` oppure `quiz_finale.xml`).
+            Assicurati che questo nome corrisponda **esattamente** al file fisico che consegnerai al Moodle Architect per evitare errori di link interrotti sulla piattaforma.
             """)
 
     with st.form("form_materiali", clear_on_submit=True):
         nomi_moduli_mat = [m["titolo"] for m in sorted(st.session_state.moduli, key=lambda x: x.get("ordine", 999))] if st.session_state.moduli else ["Globale"]
+
         col1, col2 = st.columns(2)
         mod_mat_selezionato = col1.selectbox("Assegna al Modulo (Opzionale)", nomi_moduli_mat)
         tipo_materiale = col2.selectbox("Tipologia", ["Slide", "Dispensa PDF", "Quiz", "Trascrizione", "Altro"])
-        file_selezionato = st.file_uploader("Seleziona file di riferimento")
+        nome_file_input = st.text_input("Nome File *")
         desc_materiale = st.text_area("Descrizione o istruzioni")
 
         if st.form_submit_button("➕ Aggiungi Materiale"):
-            nome_file = file_selezionato.name if file_selezionato else "Nessun_file"
-            st.session_state.materiali.append({
-                "modulo_riferimento": mod_mat_selezionato, "nome_file": nome_file,
-                "tipo": tipo_materiale, "descrizione": desc_materiale.strip()
-            })
-            st.success("Materiale aggiunto!")
+            if not nome_file_input.strip():
+                st.error("Il Nome File è obbligatorio.")
+            else:
+                st.session_state.materiali.append({
+                    "modulo_riferimento": mod_mat_selezionato,
+                    "nome_file": nome_file_input.strip(),
+                    "tipo": tipo_materiale,
+                    "descrizione": desc_materiale.strip()
+                })
+                st.success("Materiale aggiunto!")
+                st.rerun()
 
     if st.session_state.materiali:
         st.caption("🗑️ **Per eliminare una riga:** Spunta la casella alla sua sinistra e premi il tasto 'Canc' o 'Backspace' sulla tastiera.")
@@ -460,7 +468,7 @@ with tab3:
             use_container_width=True, num_rows="dynamic", key="edit_materiali",
             column_config={
                 "modulo_riferimento": st.column_config.SelectboxColumn("Modulo", options=nomi_moduli_mat, required=True),
-                "nome_file": st.column_config.TextColumn("Nome File"),
+                "nome_file": st.column_config.TextColumn("Nome File", required=True),
                 "tipo": st.column_config.SelectboxColumn("Tipologia", options=["Slide", "Dispensa PDF", "Quiz", "Trascrizione", "Altro"]),
                 "descrizione": st.column_config.TextColumn("Descrizione")
             }
