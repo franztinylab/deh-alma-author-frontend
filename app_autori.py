@@ -480,7 +480,7 @@ with tab3:
     with st.form("form_materiali", clear_on_submit=True):
         col1, col2 = st.columns(2)
         mod_mat_selezionato = col1.selectbox("Assegna al Modulo *", nomi_moduli_mat)
-        tipo_materiale = col2.selectbox("Tipologia", ["Slide", "Dispensa PDF", "Quiz", "Trascrizione", "Bibliografia", "Altro"])
+        tipo_materiale = col2.selectbox("Tipologia", ["Slide", "Dispensa", "Quiz", "Trascrizione", "Bibliografia", "Altro"])
         nome_file_input = st.text_input("Nome File *")
         desc_materiale = st.text_area("Descrizione o istruzioni")
 
@@ -505,7 +505,7 @@ with tab3:
             column_config={
                 "modulo_riferimento": st.column_config.SelectboxColumn("Modulo", options=nomi_moduli_mat, required=True),
                 "nome_file": st.column_config.TextColumn("Nome File", required=True),
-                "tipo": st.column_config.SelectboxColumn("Tipologia", options=["Slide", "Dispensa PDF", "Quiz", "Trascrizione", "Bibliografia", "Altro"]),
+                "tipo": st.column_config.SelectboxColumn("Tipologia", options=["Slide", "Dispensa", "Quiz", "Trascrizione", "Bibliografia", "Altro"]),
                 "descrizione": st.column_config.TextColumn("Descrizione")
             }
         )
