@@ -386,10 +386,10 @@ with tab2:
         with st.popover("ℹ️ Aiuto Videolezioni"):
             st.info("""
             **Linee guida per le Videolezioni:**
-            Ogni lezione deve essere agganciata a uno dei Moduli creati in precedenza.
+            Ogni lezione deve fare parte di uno dei Moduli didattici creati in precedenza.
             * **Titolo Lezione:** Il nome visibile agli studenti per questa specifica pillola video.
-            * **Nome File Video:** Inserisci il nome **esatto** del file video (es. `modulo1_lezione1.mp4`). Questo campo è *cruciale* per le automazioni tecniche di piattaforma.
-            * **Argomenti della lezione:** Manda a capo ogni singolo concetto. Il sistema trasformerà automaticamente il tuo testo in un elegante elenco puntato sotto al video su Moodle.
+            * **Nome File Video:** Inserisci il nome **esatto** del file video (es. `modulo1_lezione1.mp4`).
+            * **Argomenti della lezione:** Manda a capo ogni singolo concetto. Il sistema trasformerà automaticamente il tuo testo in un elenco puntato sotto al video sulla piattaforma.
             """)
 
     if not st.session_state.moduli:
@@ -427,28 +427,33 @@ with tab2:
             moduli_ordini = {m["titolo"]: m["ordine"] for m in moduli_ordinati}
             contatori_lezioni = {m["titolo"]: 1 for m in moduli_ordinati}
 
+            # 1. Ordina in base all'ordine del modulo e poi all'ordine della lezione digitato dall'utente
             lezioni_ordinate = sorted(st.session_state.lezioni, key=lambda x: (moduli_ordini.get(x["modulo"], 999), x.get("ordine", 999)))
 
+            # 2. Riassegna in automatico ID e Posizione normalizzata (1, 2, 3...) per ogni modulo
             for lez in lezioni_ordinate:
                 nome_mod = lez["modulo"]
                 ordine_mod = moduli_ordini.get(nome_mod, 999)
                 prog_lez = contatori_lezioni.get(nome_mod, 1)
-                lez["id"] = f"{ordine_mod}.{prog_lez}"
+
+                lez["id"] = f"{ordine_mod}.{prog_lez}" # Ricalcola l'ID (es. 1.1)
+                lez["ordine"] = prog_lez              # Ricalcola la posizione visiva
+
                 contatori_lezioni[nome_mod] = prog_lez + 1
 
             st.session_state.lezioni = lezioni_ordinate
 
-            st.caption("🗑️ **Per eliminare una lezione:** Spunta la casella a sinistra e premi 'Canc'. L'ID si riaggiornerà automaticamente.")
+            st.caption("💡 **Per spostare una lezione:** Cambia il suo **Modulo** o modifica il numero nella colonna **Pos.**. L'ID si aggiornerà da solo.\n🗑️ **Per eliminare:** Spunta la casella a sinistra e premi 'Canc'.")
             st.session_state.lezioni = st.data_editor(
                 st.session_state.lezioni,
                 use_container_width=True, num_rows="dynamic", key="edit_lezioni",
                 column_config={
-                    "id": st.column_config.TextColumn("ID (Auto)", disabled=True, width="small"),
+                    "id": st.column_config.TextColumn("ID", disabled=True, width="small"),
+                    "ordine": st.column_config.NumberColumn("Pos.", min_value=1, step=1, required=True, width="small"),
                     "modulo": st.column_config.SelectboxColumn("Modulo", options=nomi_moduli, required=True),
                     "titolo": st.column_config.TextColumn("Titolo", required=True),
                     "nome_file_video": st.column_config.TextColumn("Nome File Video", required=True),
                     "argomenti_raw": st.column_config.TextColumn("Argomenti testuali", required=True),
-                    "ordine": None,
                     "argomenti": None,
                 }
             )
