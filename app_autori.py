@@ -113,7 +113,7 @@ with st.sidebar:
         Se ricarichi la pagina (F5) o chiudi la finestra, **perderai tutto**.
 
         **Per non perdere il lavoro:**
-        1. Clicca su **Scarica Bozza Incompleta**.
+        1. Clicca su **Scarica Bozza parziale**.
         2. Verrà scaricato un file `bozza_...json` sul tuo computer.
         3. Quando vorrai riprendere il lavoro, trascina quel file nel riquadro sottostante e clicca **Carica Dati**.
         """)
@@ -121,7 +121,7 @@ with st.sidebar:
     bozza_json = json.dumps(genera_payload(), indent=4, ensure_ascii=False)
     nome_bozza = st.session_state.corso['titolo'].replace(' ', '_').lower() if st.session_state.corso.get('titolo') else "nuovo_corso"
     st.download_button(
-        label="💾 Scarica Bozza Incompleta",
+        label="💾 Scarica Bozza parziale",
         data=bozza_json,
         file_name=f"bozza_{nome_bozza}.json",
         mime="application/json",
@@ -177,9 +177,12 @@ with tab1:
     with col_help:
         with st.popover("ℹ️ Aiuto Info Generali"):
             st.info("""
-                    Questi dati popoleranno la **pagina di presentazione del corso**. Compila ogni campo testuale. I campi con l'asterisco (*) sono obbligatori per completare il pacchetto.
-                    La descrizione breve apparirà in un riquadro nella pagina di copertina, mentre la descrizione completa sarà visibile nel Syllabus.
-                    Gli obiettivi formativi saranno utilizzati per delineare le competenze che gli studenti acquisiranno.
+                    Questi dati appariranno nella **pagina di presentazione del corso**. I campi con l'asterisco (*) sono obbligatori per completare le informazioni.
+                    * **Titolo del Corso**: Il nome ufficiale del corso.
+                    * **Sottotitolo**: Una breve descrizione che accompagna il titolo.
+                    * **Descrizione Breve**: Una sintesi del corso, visibile nella pagina di copertina.
+                    * **Descrizione Completa**: Una descrizione dettagliata del corso, visibile nel Syllabus.
+                    * **Obiettivi Formativi**: Le competenze che gli studenti acquisiranno.
                     """)
 
     st.session_state.corso["titolo"] = st.text_input("Titolo del Corso *", st.session_state.corso.get("titolo", ""))
@@ -196,11 +199,11 @@ with tab1:
         with st.popover("ℹ️ Aiuto Bio Docente"):
             st.info("""
             **Linee guida per il Curriculum:**
-            Le informazioni devono essere **brevi ed essenziali** per ottimizzare la visualizzazione su Moodle.
+            Le informazioni devono essere **brevi ed essenziali** perché compariranno nella pagina di presentazione del corso sotto la foto o le iniziali del docente.
             Inserisci esclusivamente:
             * **Titoli accademici** rilevanti.
-            * **Certificazioni** principali.
-            * **Competenze specifiche** legate agli argomenti di questo corso.
+            * **Certificazioni** principali se possedute.
+            * **Competenze specifiche** in relazione agli argomenti di questo corso.
             """)
 
     col_t, col_n, col_c = st.columns([1, 2, 2])
@@ -247,7 +250,18 @@ with tab1:
         )
 
     st.markdown("---")
-    st.markdown("### Argomenti Trattati * (Minimo 1 obbligatorio)")
+    col_arg, col_arg_help = st.columns([8, 2])
+    with col_arg:
+        st.markdown("### 📋 Argomenti Trattati * (Minimo 1)")
+    with col_arg_help:
+        with st.popover("ℹ️ Aiuto Argomenti"):
+            st.info("""
+            **Linee guida per gli Argomenti:**
+            Questi rappresentano i **macro-temi** o le unità didattiche principali che compongono il tuo corso. Ogni argomento diventerà una sezione del corso nella piattaforma online.
+            * **Titolo Argomento**: Un titolo chiaro e conciso (es. 'Basi di Anatomia').
+            * **Descrizione**: Un breve riassunto dei concetti chiave che verranno affrontati in questo blocco.
+            * 💡 *Suggerimento:* Puoi far coincidere gli argomenti trattati con i moduli didattici nei quali sono suddivise le videolezioni. Nella Tab successiva troverai un pulsante per trasformare automaticamente questi argomenti nei **Moduli didattici** senza doverli riscrivere.
+            """)
 
     with st.form("form_argomenti", clear_on_submit=True):
         col1, col2 = st.columns(2)
@@ -279,13 +293,17 @@ with tab1:
 with tab2:
     col_mod, col_mod_help = st.columns([8, 2])
     with col_mod:
-        st.subheader("Gestione Struttura: Moduli e Lezioni")
+        st.subheader("Gestione Struttura del corso: Moduli didattici e Lezioni")
     with col_mod_help:
         with st.popover("ℹ️ Aiuto Struttura"):
             st.info("""
-            **Come funziona:**
-            1. Crea un **Modulo** (le "scatole" principali, es. 'Modulo 1 - Basi').
-            2. Aggiungi le **Videolezioni** assegnandole a un Modulo specifico tramite il menu a tendina.
+            **Per strutturare il corso:**
+            * Crea i **Moduli didattici** assegnando un nome chiaro e conciso e una descrizione dei contenuti.
+            * Ogni Modulo rappresenta un blocco tematico del corso e conterrà una o più Videolezioni.
+            * Ogni modulo ha un ordine che determina la sequenza di visualizzazione nel corso. Puoi modificare l'ordine dei moduli modificando il numero nella colonna 'Pos.'.
+            * Aggiungi le **Videolezioni** assegnandole a un Modulo didattico specifico tramite il menu a tendina.
+            * Ogni Videolezione deve avere un titolo, un nome file video e una lista di argomenti trattati (uno per riga).
+            * Ogni modulo deve contenere almeno una videolezione per garantire una struttura coerente del corso.
             """)
 
     if st.session_state.corso.get("argomenti_trattati"):
@@ -299,11 +317,11 @@ with tab2:
             with st.popover("ℹ️ Cos'è questo?"):
                 st.info("""
                 **Automazione Workflow:**
-                Cliccando questo pulsante, il sistema leggerà gli **Argomenti Trattati** inseriti nella *Tab 1* e genererà automaticamente i **Moduli** corrispondenti in questa scheda.
+                Cliccando questo pulsante, il sistema leggerà gli **Argomenti Trattati** inseriti nella *Tab 1* e genererà automaticamente i **Moduli didattici** corrispondenti in questa scheda.
 
                 *Note tecniche:*
-                - Utile per creare rapidamente l'impalcatura del corso.
-                - Il sistema controlla i duplicati: se hai già creato un modulo con lo stesso nome, non verrà sovrascritto o sdoppiato.
+                - Utile per creare rapidamente la struttura del corso.
+                - Il sistema controlla i duplicati: se hai già creato un modulo didattico con lo stesso nome, non verrà sovrascritto o sdoppiato.
                 """)
 
         if esegui_trasformazione:
@@ -332,7 +350,7 @@ with tab2:
     with st.form("form_modulo", clear_on_submit=True):
         col1, col2 = st.columns(2)
         nome_modulo = col1.text_input("Nome Modulo *")
-        desc_modulo = col2.text_area("Breve introduzione (Opzionale)")
+        desc_modulo = col2.text_area("Breve descrizione (Opzionale)")
         if st.form_submit_button("➕ Aggiungi Modulo"):
             if not nome_modulo:
                 st.error("Il nome del modulo è obbligatorio.")
@@ -532,7 +550,7 @@ with tab4:
         nome_export = st.session_state.corso['titolo'].replace(' ', '_').lower()
 
         st.download_button(
-            label="✅ SCARICA MASTER JSON DEL CORSO",
+            label="✅ SCARICA FILE MASTER JSON DEL CORSO",
             data=json_data,
             file_name=f"MASTER_{nome_export}.json",
             mime="application/json",
@@ -557,7 +575,7 @@ with tab5:
 
     Per prevenire la perdita dei dati o lavorare in più sessioni:
     1. Guarda la **Barra Laterale a sinistra** (Gestione Progetto).
-    2. Clicca sul pulsante **"💾 Scarica Bozza Incompleta"**. Questo salverà sul tuo computer un file di salvataggio (anche se il corso è incompleto e presenta errori).
+    2. Clicca sul pulsante **"💾 Scarica Bozza parziale"**. Questo salverà sul tuo computer un file di salvataggio (anche se il corso è incompleto e presenta errori).
     3. Quando sei pronto a riprendere il lavoro, riapri questa pagina web.
     4. Trascina il file `bozza_...json` scaricato in precedenza nell'area **"📥 Riprendi lavoro da file JSON"** nella barra laterale.
     5. Clicca su **"Carica Dati"**. L'interfaccia si popolerà istantaneamente con il tuo lavoro precedente.
