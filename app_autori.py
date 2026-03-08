@@ -372,14 +372,25 @@ with tab2:
         )
 
     st.markdown("---")
-    st.markdown("### 🎬 2.0 Videolezione Introduttiva (Obbligatoria)")
+    st.markdown("### 🎬 2.0 Videolezione Introduttiva (breve introduzione di circa 2 minuti)")
     st.info("Questa lezione ha ID **0.1** e titolo '**Introduzione al corso**' preimpostati dal sistema. Inserisci solo il nome del file video.")
 
     st.session_state.intro_video["nome_file_video"] = st.text_input("Nome File Video (Intro) *", st.session_state.intro_video.get("nome_file_video", ""))
 
 
     st.markdown("---")
-    st.markdown("### 🎥 2.1 Videolezioni Modulari")
+    col_lez, col_lez_help = st.columns([8, 2])
+    with col_lez:
+        st.markdown("### 🎥 2.1 Videolezioni")
+    with col_lez_help:
+        with st.popover("ℹ️ Aiuto Videolezioni"):
+            st.info("""
+            **Linee guida per le Videolezioni:**
+            Ogni lezione deve essere agganciata a uno dei Moduli creati in precedenza.
+            * **Titolo Lezione:** Il nome visibile agli studenti per questa specifica pillola video.
+            * **Nome File Video:** Inserisci il nome **esatto** del file video (es. `modulo1_lezione1.mp4`). Questo campo è *cruciale* per le automazioni tecniche di piattaforma.
+            * **Argomenti della lezione:** Manda a capo ogni singolo concetto. Il sistema trasformerà automaticamente il tuo testo in un elegante elenco puntato sotto al video su Moodle.
+            """)
 
     if not st.session_state.moduli:
         st.warning("⚠️ Crea almeno un Modulo per aggiungere delle videolezioni.")
