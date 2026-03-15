@@ -486,15 +486,16 @@ with tab2:
 
             st.session_state.lezioni = lezioni_ordinate
 
-            st.caption("💡 **Per spostare una lezione:** Cambia il suo **Modulo** o il numero **Pos.**. L'ID si aggiornerà da solo.\n🗑️ **Per eliminare:** Spunta la casella a sinistra e premi 'Canc'.")
+            st.caption("💡 **Per spostare una lezione:** Cambia il suo **Modulo** o modifica il numero nella colonna **Pos.**. L'ID si aggiornerà da solo.\n🗑️ **Per eliminare:** Spunta la casella a sinistra e premi 'Canc'.")
 
             # WRAP DEL DATA_EDITOR IN UN FORM PER BLOCCARE L'AUTO-REFRESH
-            with st.form("form_aggiorna_lezioni"):
+            with st.form("form_aggiorna_lezioni", border=True):
+                # 1. Avviso visivo persistente dentro il form
+                st.info("✍️ **Modalità Modifica Sicura:** Il salvataggio automatico è sospeso per non interrompere la tua digitazione. Ricordati di salvare prima di cambiare scheda!")
+
                 lezioni_modificate = st.data_editor(
                     st.session_state.lezioni,
-                    use_container_width=True,
-                    num_rows="dynamic",
-                    key="edit_lezioni",
+                    use_container_width=True, num_rows="dynamic", key="edit_lezioni",
                     column_config={
                         "id": st.column_config.TextColumn("ID", disabled=True, width="small"),
                         "ordine": st.column_config.NumberColumn("Pos.", min_value=1, step=1, required=True, width="small"),
@@ -506,10 +507,16 @@ with tab2:
                     }
                 )
 
-                # IL PULSANTE DI AGGIORNAMENTO MANUALE
-                if st.form_submit_button("💾 Salva Modifiche Tabella Lezioni"):
+                # 2. Pulsante in stile "Primary" (Rosso/Evidenziato) e largo tutto lo schermo
+                if st.form_submit_button("💾 CONFERMA E SALVA MODIFICHE TABELLA", type="primary", use_container_width=True):
                     st.session_state.lezioni = lezioni_modificate
-                    st.success("Modifiche alle lezioni salvate con successo!")
+
+                    # 3. Aggiorniamo l'hash globale in modo che il semaforo generale diventi Giallo (Da scaricare)
+                    if 'last_saved_hash' in st.session_state:
+                        # Forziamo una discrepanza momentanea per accendere il semaforo globale di download
+                        st.session_state["last_saved_hash"] = ""
+
+                    st.success("Modifiche alle videolezioni registrate!")
                     st.rerun()
 
 # ==========================================
