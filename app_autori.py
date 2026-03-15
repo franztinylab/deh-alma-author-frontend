@@ -1,6 +1,8 @@
 import streamlit as st
+import streamlit.components.v1 as components
 import json
 import re
+import hashlib
 
 st.set_page_config(page_title="DEH-ALMA Course Builder", layout="wide")
 
@@ -33,6 +35,25 @@ def check_password():
 if not check_password():
     st.stop()
 
+# Iniezione JavaScript per prevenire la chiusura accidentale della finestra del browser
+components.html("""
+    <script>
+        const parentWindow = window.parent || window;
+        parentWindow.addEventListener("beforeunload", function (e) {
+            // Mostra il prompt nativo del browser "Vuoi davvero uscire?"
+            e.preventDefault();
+            e.returnValue = 'Hai delle modifiche non salvate. Sei sicuro di voler uscire?';
+        });
+    </script>
+""", height=0, width=0)
+
+def get_current_hash():
+    """Calcola l'impronta digitale esatta dello stato corrente del progetto"""
+    payload = genera_payload()
+    # Usiamo sort_keys=True per garantire che l'ordine delle chiavi non alteri l'hash
+    payload_string = json.dumps(payload, sort_keys=True, ensure_ascii=False)
+    return hashlib.md5(payload_string.encode('utf-8')).hexdigest()
+
 # --- INIZIALIZZAZIONE DELLO STATO (DATA MODEL) ---
 if 'corso' not in st.session_state:
     st.session_state.corso = {
@@ -53,6 +74,9 @@ if 'materiali' not in st.session_state:
     st.session_state.materiali = []
 if 'intro_video' not in st.session_state:
     st.session_state.intro_video = {"nome_file_video": ""}
+
+if 'last_saved_hash' not in st.session_state:
+    st.session_state['last_saved_hash'] = get_current_hash()
 
 def pulisci_testo_lista(testo_grezzo):
     return [re.sub(r'^[\•\-\*\◦\▪]\s*', '', linea).strip() for linea in str(testo_grezzo).split('\n') if linea.strip()]
@@ -118,14 +142,29 @@ with st.sidebar:
         3. Quando vorrai riprendere il lavoro, trascina quel file nel riquadro sottostante e clicca **Carica Dati**.
         """)
 
+    # --- CALCOLO STATO SALVATAGGIO ---
+    current_hash = get_current_hash()
+    is_dirty = current_hash != st.session_state["last_saved_hash"]
+
+    if is_dirty:
+        st.warning("⚠️ Hai delle modifiche non salvate. Ricordati di scaricare la bozza!")
+    else:
+        st.success("✅ Tutte le modifiche sono state salvate.")
+
+    def imposta_come_salvato():
+        """Callback eseguita quando l'utente preme il tasto Scarica"""
+        st.session_state["last_saved_hash"] = get_current_hash()
+
     bozza_json = json.dumps(genera_payload(), indent=4, ensure_ascii=False)
     nome_bozza = st.session_state.corso['titolo'].replace(' ', '_').lower() if st.session_state.corso.get('titolo') else "nuovo_corso"
+
     st.download_button(
         label="💾 Scarica Bozza parziale",
         data=bozza_json,
         file_name=f"bozza_{nome_bozza}.json",
         mime="application/json",
-        use_container_width=True
+        use_container_width=True,
+        on_click=imposta_come_salvato
     )
 
     st.markdown("---")
@@ -150,6 +189,9 @@ with st.sidebar:
                 st.session_state.lezioni = [lez for lez in lezioni_caricate if lez.get("id") != "0.1" and lez.get("titolo") != "Introduzione al corso"]
                 st.session_state.materiali = data.get("risorse_extra", [])
                 st.session_state.intro_video = data.get("intro_video", {"nome_file_video": ""})
+
+                # Aggiorna l'hash per far diventare il semaforo Verde!
+                st.session_state["last_saved_hash"] = get_current_hash()
 
                 st.success("Progetto caricato!")
                 st.rerun()
