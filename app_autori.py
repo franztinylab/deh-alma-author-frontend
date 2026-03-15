@@ -286,11 +286,19 @@ with tab1:
     destinatari_validi = [d for d in st.session_state.corso.get("destinatari", []) if d.get("profilo", "").strip() != ""]
     if destinatari_validi:
         st.caption("🗑️ **Per eliminare una riga:** Spunta la casella alla sua sinistra e premi il tasto 'Canc' o 'Backspace' sulla tastiera.")
-        st.session_state.corso["destinatari"] = st.data_editor(
-            st.session_state.corso["destinatari"],
-            use_container_width=True, num_rows="dynamic", key="edit_destinatari",
-            column_config={"profilo": st.column_config.TextColumn("Profilo Destinatario", required=True)}
-        )
+        with st.form("form_aggiorna_destinatari", border=True):
+            st.info("✍️ **Modalità Modifica Sicura:** Il salvataggio automatico è sospeso. Ricordati di salvare prima di cambiare scheda!")
+            destinatari_modificati = st.data_editor(
+                st.session_state.corso["destinatari"],
+                use_container_width=True, num_rows="dynamic", key="edit_destinatari",
+                column_config={"profilo": st.column_config.TextColumn("Profilo Destinatario", required=True)}
+            )
+            if st.form_submit_button("💾 CONFERMA E SALVA DESTINATARI", type="primary", use_container_width=True):
+                st.session_state.corso["destinatari"] = destinatari_modificati
+                if 'last_saved_hash' in st.session_state:
+                    st.session_state["last_saved_hash"] = ""
+                st.success("Modifiche ai destinatari registrate!")
+                st.rerun()
 
     st.markdown("---")
     col_arg, col_arg_help = st.columns([8, 2])
@@ -320,15 +328,23 @@ with tab1:
 
     if st.session_state.corso.get("argomenti_trattati"):
         st.caption("🗑️ **Per eliminare una riga:** Spunta la casella alla sua sinistra e premi il tasto 'Canc' o 'Backspace' sulla tastiera.")
-        st.session_state.corso["argomenti_trattati"] = st.data_editor(
-            st.session_state.corso["argomenti_trattati"],
-            use_container_width=True, num_rows="dynamic", key="edit_argomenti",
-            column_config={
-                "ordine": st.column_config.NumberColumn("Pos.", min_value=1, step=1, required=True, width="small"),
-                "titolo": st.column_config.TextColumn("Titolo Argomento", required=True),
-                "descrizione": st.column_config.TextColumn("Descrizione Argomento", required=True)
-            }
-        )
+        with st.form("form_aggiorna_argomenti", border=True):
+            st.info("✍️ **Modalità Modifica Sicura:** Il salvataggio automatico è sospeso. Ricordati di salvare prima di cambiare scheda!")
+            argomenti_modificati = st.data_editor(
+                st.session_state.corso["argomenti_trattati"],
+                use_container_width=True, num_rows="dynamic", key="edit_argomenti",
+                column_config={
+                    "ordine": st.column_config.NumberColumn("Pos.", min_value=1, step=1, required=True, width="small"),
+                    "titolo": st.column_config.TextColumn("Titolo Argomento", required=True),
+                    "descrizione": st.column_config.TextColumn("Descrizione Argomento", required=True)
+                }
+            )
+            if st.form_submit_button("💾 CONFERMA E SALVA ARGOMENTI", type="primary", use_container_width=True):
+                st.session_state.corso["argomenti_trattati"] = argomenti_modificati
+                if 'last_saved_hash' in st.session_state:
+                    st.session_state["last_saved_hash"] = ""
+                st.success("Modifiche agli argomenti registrate!")
+                st.rerun()
 
 # ==========================================
 # TAB 2: MODULI E VIDEOLEZIONI
@@ -404,15 +420,23 @@ with tab2:
 
     if st.session_state.moduli:
         st.caption("🗑️ **Per eliminare un modulo:** Spunta la casella alla sua sinistra e premi il tasto 'Canc' sulla tastiera.")
-        st.session_state.moduli = st.data_editor(
-            st.session_state.moduli,
-            use_container_width=True, num_rows="dynamic", key="edit_moduli",
-            column_config={
-                "ordine": st.column_config.NumberColumn("Pos.", min_value=1, required=True, width="small"),
-                "titolo": st.column_config.TextColumn("Nome Modulo", required=True),
-                "descrizione": st.column_config.TextColumn("Descrizione")
-            }
-        )
+        with st.form("form_aggiorna_moduli", border=True):
+            st.info("✍️ **Modalità Modifica Sicura:** Il salvataggio automatico è sospeso. Ricordati di salvare prima di cambiare scheda!")
+            moduli_modificati = st.data_editor(
+                st.session_state.moduli,
+                use_container_width=True, num_rows="dynamic", key="edit_moduli",
+                column_config={
+                    "ordine": st.column_config.NumberColumn("Pos.", min_value=1, required=True, width="small"),
+                    "titolo": st.column_config.TextColumn("Nome Modulo", required=True),
+                    "descrizione": st.column_config.TextColumn("Descrizione")
+                }
+            )
+            if st.form_submit_button("💾 CONFERMA E SALVA MODULI", type="primary", use_container_width=True):
+                st.session_state.moduli = moduli_modificati
+                if 'last_saved_hash' in st.session_state:
+                    st.session_state["last_saved_hash"] = ""
+                st.success("Modifiche ai moduli registrate!")
+                st.rerun()
 
     st.markdown("---")
     st.markdown("### 🎬 2.0 Videolezione Introduttiva (breve introduzione di circa 2 minuti)")
@@ -470,17 +494,15 @@ with tab2:
             moduli_ordini = {m["titolo"]: m["ordine"] for m in moduli_ordinati}
             contatori_lezioni = {m["titolo"]: 1 for m in moduli_ordinati}
 
-            # 1. Ordina in base all'ordine del modulo e poi all'ordine della lezione digitato dall'utente
             lezioni_ordinate = sorted(st.session_state.lezioni, key=lambda x: (moduli_ordini.get(x["modulo"], 999), x.get("ordine", 999)))
 
-            # 2. Riassegna in automatico ID e Posizione normalizzata (1, 2, 3...) per ogni modulo
             for lez in lezioni_ordinate:
                 nome_mod = lez["modulo"]
                 ordine_mod = moduli_ordini.get(nome_mod, 999)
                 prog_lez = contatori_lezioni.get(nome_mod, 1)
 
-                lez["id"] = f"{ordine_mod}.{prog_lez}" # Ricalcola l'ID (es. 1.1)
-                lez["ordine"] = prog_lez              # Ricalcola la posizione visiva
+                lez["id"] = f"{ordine_mod}.{prog_lez}"
+                lez["ordine"] = prog_lez
 
                 contatori_lezioni[nome_mod] = prog_lez + 1
 
@@ -488,11 +510,8 @@ with tab2:
 
             st.caption("💡 **Per spostare una lezione:** Cambia il suo **Modulo** o modifica il numero nella colonna **Pos.**. L'ID si aggiornerà da solo.\n🗑️ **Per eliminare:** Spunta la casella a sinistra e premi 'Canc'.")
 
-            # WRAP DEL DATA_EDITOR IN UN FORM PER BLOCCARE L'AUTO-REFRESH
             with st.form("form_aggiorna_lezioni", border=True):
-                # 1. Avviso visivo persistente dentro il form
-                st.info("✍️ **Modalità Modifica Sicura:** Il salvataggio automatico è sospeso per non interrompere la tua digitazione. Ricordati di salvare prima di cambiare scheda!")
-
+                st.info("✍️ **Modalità Modifica Sicura:** Il salvataggio automatico è sospeso. Ricordati di salvare prima di cambiare scheda!")
                 lezioni_modificate = st.data_editor(
                     st.session_state.lezioni,
                     use_container_width=True, num_rows="dynamic", key="edit_lezioni",
@@ -506,16 +525,10 @@ with tab2:
                         "argomenti": None,
                     }
                 )
-
-                # 2. Pulsante in stile "Primary" (Rosso/Evidenziato) e largo tutto lo schermo
-                if st.form_submit_button("💾 CONFERMA E SALVA MODIFICHE TABELLA", type="primary", use_container_width=True):
+                if st.form_submit_button("💾 CONFERMA E SALVA VIDEOLEZIONI", type="primary", use_container_width=True):
                     st.session_state.lezioni = lezioni_modificate
-
-                    # 3. Aggiorniamo l'hash globale in modo che il semaforo generale diventi Giallo (Da scaricare)
                     if 'last_saved_hash' in st.session_state:
-                        # Forziamo una discrepanza momentanea per accendere il semaforo globale di download
                         st.session_state["last_saved_hash"] = ""
-
                     st.success("Modifiche alle videolezioni registrate!")
                     st.rerun()
 
@@ -560,16 +573,24 @@ with tab3:
 
     if st.session_state.materiali:
         st.caption("🗑️ **Per eliminare una riga:** Spunta la casella alla sua sinistra e premi il tasto 'Canc' o 'Backspace' sulla tastiera.")
-        st.session_state.materiali = st.data_editor(
-            st.session_state.materiali,
-            use_container_width=True, num_rows="dynamic", key="edit_materiali",
-            column_config={
-                "modulo_riferimento": st.column_config.SelectboxColumn("Modulo", options=nomi_moduli_mat, required=True),
-                "nome_file": st.column_config.TextColumn("Nome File", required=True),
-                "tipo": st.column_config.SelectboxColumn("Tipologia", options=["Slide", "Dispensa", "Quiz", "Trascrizione", "Bibliografia", "Altro"]),
-                "descrizione": st.column_config.TextColumn("Descrizione")
-            }
-        )
+        with st.form("form_aggiorna_materiali", border=True):
+            st.info("✍️ **Modalità Modifica Sicura:** Il salvataggio automatico è sospeso. Ricordati di salvare prima di cambiare scheda!")
+            materiali_modificati = st.data_editor(
+                st.session_state.materiali,
+                use_container_width=True, num_rows="dynamic", key="edit_materiali",
+                column_config={
+                    "modulo_riferimento": st.column_config.SelectboxColumn("Modulo", options=nomi_moduli_mat, required=True),
+                    "nome_file": st.column_config.TextColumn("Nome File", required=True),
+                    "tipo": st.column_config.SelectboxColumn("Tipologia", options=["Slide", "Dispensa", "Quiz", "Trascrizione", "Bibliografia", "Altro"]),
+                    "descrizione": st.column_config.TextColumn("Descrizione")
+                }
+            )
+            if st.form_submit_button("💾 CONFERMA E SALVA MATERIALI", type="primary", use_container_width=True):
+                st.session_state.materiali = materiali_modificati
+                if 'last_saved_hash' in st.session_state:
+                    st.session_state["last_saved_hash"] = ""
+                st.success("Modifiche ai materiali extra registrate!")
+                st.rerun()
 
 # ==========================================
 # TAB 4: ESPORTAZIONE E VALIDAZIONE
