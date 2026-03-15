@@ -443,20 +443,31 @@ with tab2:
 
             st.session_state.lezioni = lezioni_ordinate
 
-            st.caption("💡 **Per spostare una lezione:** Cambia il suo **Modulo** o modifica il numero nella colonna **Pos.**. L'ID si aggiornerà da solo.\n🗑️ **Per eliminare:** Spunta la casella a sinistra e premi 'Canc'.")
-            st.session_state.lezioni = st.data_editor(
-                st.session_state.lezioni,
-                use_container_width=True, num_rows="dynamic", key="edit_lezioni",
-                column_config={
-                    "id": st.column_config.TextColumn("ID", disabled=True, width="small"),
-                    "ordine": st.column_config.NumberColumn("Pos.", min_value=1, step=1, required=True, width="small"),
-                    "modulo": st.column_config.SelectboxColumn("Modulo", options=nomi_moduli, required=True),
-                    "titolo": st.column_config.TextColumn("Titolo", required=True),
-                    "nome_file_video": st.column_config.TextColumn("Nome File Video", required=True),
-                    "argomenti_raw": st.column_config.TextColumn("Argomenti testuali", required=True),
-                    "argomenti": None,
-                }
-            )
+            st.caption("💡 **Per spostare una lezione:** Cambia il suo **Modulo** o il numero **Pos.**. L'ID si aggiornerà da solo.\n🗑️ **Per eliminare:** Spunta la casella a sinistra e premi 'Canc'.")
+
+            # WRAP DEL DATA_EDITOR IN UN FORM PER BLOCCARE L'AUTO-REFRESH
+            with st.form("form_aggiorna_lezioni"):
+                lezioni_modificate = st.data_editor(
+                    st.session_state.lezioni,
+                    use_container_width=True,
+                    num_rows="dynamic",
+                    key="edit_lezioni",
+                    column_config={
+                        "id": st.column_config.TextColumn("ID", disabled=True, width="small"),
+                        "ordine": st.column_config.NumberColumn("Pos.", min_value=1, step=1, required=True, width="small"),
+                        "modulo": st.column_config.SelectboxColumn("Modulo", options=nomi_moduli, required=True),
+                        "titolo": st.column_config.TextColumn("Titolo", required=True),
+                        "nome_file_video": st.column_config.TextColumn("Nome File Video", required=True),
+                        "argomenti_raw": st.column_config.TextColumn("Argomenti testuali", required=True),
+                        "argomenti": None,
+                    }
+                )
+
+                # IL PULSANTE DI AGGIORNAMENTO MANUALE
+                if st.form_submit_button("💾 Salva Modifiche Tabella Lezioni"):
+                    st.session_state.lezioni = lezioni_modificate
+                    st.success("Modifiche alle lezioni salvate con successo!")
+                    st.rerun()
 
 # ==========================================
 # TAB 3: MATERIALI EXTRA
