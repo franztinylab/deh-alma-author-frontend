@@ -287,7 +287,7 @@ with tab1:
     if destinatari_validi:
         st.caption("🗑️ **Per eliminare una riga:** Spunta la casella alla sua sinistra e premi il tasto 'Canc' o 'Backspace' sulla tastiera.")
         with st.form("form_aggiorna_destinatari", border=True):
-            st.info("✍️ **Modalità Modifica Sicura:** Il salvataggio automatico è sospeso. Ricordati di salvare prima di cambiare scheda!")
+            st.info("✍️ **Modalità Modifica Sicura:** Se fai delle modifiche nella tabella, ricordati di salvare prima di cambiare scheda!")
             destinatari_modificati = st.data_editor(
                 st.session_state.corso["destinatari"],
                 use_container_width=True, num_rows="dynamic", key="edit_destinatari",
@@ -329,7 +329,7 @@ with tab1:
     if st.session_state.corso.get("argomenti_trattati"):
         st.caption("🗑️ **Per eliminare una riga:** Spunta la casella alla sua sinistra e premi il tasto 'Canc' o 'Backspace' sulla tastiera.")
         with st.form("form_aggiorna_argomenti", border=True):
-            st.info("✍️ **Modalità Modifica Sicura:** Il salvataggio automatico è sospeso. Ricordati di salvare prima di cambiare scheda!")
+            st.info("✍️ **Modalità Modifica Sicura:** Se fai delle modifiche nella tabella, ricordati di salvare prima di cambiare scheda!")
             argomenti_modificati = st.data_editor(
                 st.session_state.corso["argomenti_trattati"],
                 use_container_width=True, num_rows="dynamic", key="edit_argomenti",
@@ -421,7 +421,7 @@ with tab2:
     if st.session_state.moduli:
         st.caption("🗑️ **Per eliminare un modulo:** Spunta la casella alla sua sinistra e premi il tasto 'Canc' sulla tastiera.")
         with st.form("form_aggiorna_moduli", border=True):
-            st.info("✍️ **Modalità Modifica Sicura:** Il salvataggio automatico è sospeso. Ricordati di salvare prima di cambiare scheda!")
+            st.info("✍️ **Modalità Modifica Sicura:** Se fai delle modifiche nella tabella, ricordati di salvare prima di cambiare scheda!")
             moduli_modificati = st.data_editor(
                 st.session_state.moduli,
                 use_container_width=True, num_rows="dynamic", key="edit_moduli",
@@ -511,7 +511,7 @@ with tab2:
             st.caption("💡 **Per spostare una lezione:** Cambia il suo **Modulo** o modifica il numero nella colonna **Pos.**. L'ID si aggiornerà da solo.\n🗑️ **Per eliminare:** Spunta la casella a sinistra e premi 'Canc'.")
 
             with st.form("form_aggiorna_lezioni", border=True):
-                st.info("✍️ **Modalità Modifica Sicura:** Il salvataggio automatico è sospeso. Ricordati di salvare prima di cambiare scheda!")
+                st.info("✍️ **Modalità Modifica Sicura:** Se fai delle modifiche nella tabella, ricordati di salvare prima di cambiare scheda!")
                 lezioni_modificate = st.data_editor(
                     st.session_state.lezioni,
                     use_container_width=True, num_rows="dynamic", key="edit_lezioni",
@@ -574,7 +574,7 @@ with tab3:
     if st.session_state.materiali:
         st.caption("🗑️ **Per eliminare una riga:** Spunta la casella alla sua sinistra e premi il tasto 'Canc' o 'Backspace' sulla tastiera.")
         with st.form("form_aggiorna_materiali", border=True):
-            st.info("✍️ **Modalità Modifica Sicura:** Il salvataggio automatico è sospeso. Ricordati di salvare prima di cambiare scheda!")
+            st.info("✍️ **Modalità Modifica Sicura:** Se fai delle modifiche nella tabella, ricordati di salvare prima di cambiare scheda!")
             materiali_modificati = st.data_editor(
                 st.session_state.materiali,
                 use_container_width=True, num_rows="dynamic", key="edit_materiali",
