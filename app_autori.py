@@ -1,8 +1,8 @@
 import streamlit as st
-import streamlit.components.v1 as components
 import json
 import re
 import hashlib
+import streamlit.components.v1 as components
 
 st.set_page_config(page_title="DEH-ALMA Course Builder", layout="wide")
 
@@ -15,7 +15,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- SISTEMA DI AUTENTICAZIONE ---
+# --- 1. SISTEMA DI AUTENTICAZIONE ---
 def check_password():
     if "password_correct" not in st.session_state:
         st.session_state["password_correct"] = False
@@ -35,26 +35,7 @@ def check_password():
 if not check_password():
     st.stop()
 
-# Iniezione JavaScript per prevenire la chiusura accidentale della finestra del browser
-components.html("""
-    <script>
-        const parentWindow = window.parent || window;
-        parentWindow.addEventListener("beforeunload", function (e) {
-            // Mostra il prompt nativo del browser "Vuoi davvero uscire?"
-            e.preventDefault();
-            e.returnValue = 'Hai delle modifiche non salvate. Sei sicuro di voler uscire?';
-        });
-    </script>
-""", height=0, width=0)
-
-def get_current_hash():
-    """Calcola l'impronta digitale esatta dello stato corrente del progetto"""
-    payload = genera_payload()
-    # Usiamo sort_keys=True per garantire che l'ordine delle chiavi non alteri l'hash
-    payload_string = json.dumps(payload, sort_keys=True, ensure_ascii=False)
-    return hashlib.md5(payload_string.encode('utf-8')).hexdigest()
-
-# --- INIZIALIZZAZIONE DELLO STATO (DATA MODEL) ---
+# --- 2. INIZIALIZZAZIONE DELLO STATO DI BASE (Senza funzioni) ---
 if 'corso' not in st.session_state:
     st.session_state.corso = {
         "titolo": "", "sottotitolo": "", "descrizione_breve": "",
@@ -72,12 +53,11 @@ if 'lezioni' not in st.session_state:
 
 if 'materiali' not in st.session_state:
     st.session_state.materiali = []
+
 if 'intro_video' not in st.session_state:
     st.session_state.intro_video = {"nome_file_video": ""}
 
-if 'last_saved_hash' not in st.session_state:
-    st.session_state['last_saved_hash'] = get_current_hash()
-
+# --- 3. DEFINIZIONE DELLE FUNZIONI ---
 def pulisci_testo_lista(testo_grezzo):
     return [re.sub(r'^[\•\-\*\◦\▪]\s*', '', linea).strip() for linea in str(testo_grezzo).split('\n') if linea.strip()]
 
@@ -113,15 +93,36 @@ def genera_payload():
         "argomenti": ["Introduzione e presentazione del corso"]
     }
 
-    lezioni_export.insert(0, lezione_intro) # Inserisce la lezione 0.1 in cima a tutte
+    lezioni_export.insert(0, lezione_intro)
 
     return {
         "metadata_corso": corso_export,
-        "intro_video": st.session_state.intro_video, # Salvato per permettere il ricaricamento del JSON
+        "intro_video": st.session_state.intro_video,
         "struttura_moduli": moduli_export,
         "struttura_lezioni": lezioni_export,
         "risorse_extra": st.session_state.materiali
     }
+
+def get_current_hash():
+    """Calcola l'impronta digitale esatta dello stato corrente del progetto"""
+    payload = genera_payload()
+    payload_string = json.dumps(payload, sort_keys=True, ensure_ascii=False)
+    return hashlib.md5(payload_string.encode('utf-8')).hexdigest()
+
+# --- 4. INIZIALIZZAZIONE HASH (Ora le funzioni esistono!) ---
+if 'last_saved_hash' not in st.session_state:
+    st.session_state['last_saved_hash'] = get_current_hash()
+
+# --- 5. INIEZIONE JAVASCRIPT ---
+components.html("""
+    <script>
+        const parentWindow = window.parent || window;
+        parentWindow.addEventListener("beforeunload", function (e) {
+            e.preventDefault();
+            e.returnValue = 'Hai delle modifiche non salvate. Sei sicuro di voler uscire?';
+        });
+    </script>
+""", height=0, width=0)
 
 # ==========================================
 # SIDEBAR: GESTIONE PROGETTO
